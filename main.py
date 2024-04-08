@@ -1,4 +1,5 @@
 import grpc
+import math
 import os
 from chirpstack_api import api  # type: ignore
 from dotenv import dotenv_values
@@ -13,6 +14,16 @@ config = {
 server = config["SERVER"]
 api_token = config["API_TOKEN"]
 dev_eui = config["DEV_EUI"]
+period_sec = config["PERIOD_SEC"]
+
+hex_period = format(int(period_sec), 'x')
+len_payload=math.ceil(len(hex_period) / 2)
+
+hex_period=int(period_sec).to_bytes(len_payload, byteorder='big')
+hex_period=format(hex_period.hex())
+payload = "ff03" + hex_period
+payload=bytes.fromhex(payload)
+
 
 if __name__ == "__main__":
     # Connect without using TLS.
@@ -27,9 +38,9 @@ if __name__ == "__main__":
     # Construct request.
     req = api.EnqueueDeviceQueueItemRequest()
     req.queue_item.confirmed = False
-    req.queue_item.data = bytes([0x01, 0x02, 0x03])
+    req.queue_item.data = payload
     req.queue_item.dev_eui = dev_eui
-    req.queue_item.f_port = 10
+    req.queue_item.f_port = 80
 
     resp = client.Enqueue(req, metadata=auth_token)
 
